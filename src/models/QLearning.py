@@ -1,3 +1,8 @@
+import numpy as np
+
+from src.features.blackjackutility import random_action, game_result
+
+
 def QLearning(env, episodes = 1000000, alpha = 0.1, gamma = 0.6, epsilon = 0.1):
 
     unique_states = []
@@ -48,11 +53,15 @@ def QLearning(env, episodes = 1000000, alpha = 0.1, gamma = 0.6, epsilon = 0.1):
                 next_to_consider = [q_table[next_state_code][0], q_table[next_state_code][1]]
                 next_max = np.max(next_to_consider)
 
+                # correct_new_value considering the formula in the slides
+                # correct_new_value = old_value + alpha * (reward + (gamma * next_max) - old_value)
                 new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
                 q_table[state_code][action] = new_value
 
             else:
 
+                # correct_new_value considering the formula in the slides
+                # correct_new_value = old_value + alpha * (reward + (gamma * next_max) - old_value)
                 new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
                 q_table[state_code][action] = new_value
 

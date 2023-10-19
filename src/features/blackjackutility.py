@@ -163,3 +163,21 @@ def games_with_policy(environment, policy = None, episodes = 10):
         result = game_result(environment, state)
         sum_ += reward
     print('Total reward: {}'.format(sum_))
+
+
+def random_action(action, epsilon = 0.1, n_actions = 2):
+    ''' 
+    This function takes the best estimated action, eplsilon, and action space 
+    and returns some action. 
+    '''
+    # generate a random number from 0 to 1.
+    number = np.random.rand(1)
+    
+    # if number is smaller than 1-epsilon then return best estimated action
+    if number < 1 - epsilon:
+        return action
+    # if number is bigger or equals to 1-epsilon then return some random action from the action space
+    else:
+        action = np.random.randint(n_actions)  
+        return action 
+    

@@ -1,3 +1,9 @@
+import numpy as np
+
+from collections import defaultdict
+from src.features.blackjackutility import random_action
+
+
 def monte_carlo_ES(environment, N_episodes = 100000, discount_factor = 1, first_visit = True, epsilon = 0.1, theta = 0.0001):
     """
     plot the policy for blackjack 

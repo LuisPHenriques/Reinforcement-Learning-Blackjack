@@ -1,3 +1,7 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+
 # We will define some functions to help us train the algorithm and visualize the game results. 
 
 # This function is used to plot the value function:
