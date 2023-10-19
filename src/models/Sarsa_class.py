@@ -1,6 +1,7 @@
 import numpy as np
-from collections import defaultdict
 
+from collections import defaultdict
+from tqdm import tqdm
 
 class SarsaAgent:
     def __init__(self, environment, learning_rate = 0.001, initial_epsilon = 0.1, epsilon_decay = 0.05, final_epsilon = 0.01, discount_factor = 0.95):
@@ -51,3 +52,45 @@ class SarsaAgent:
 
     def decay_epsilon(self):
         self.epsilon = max(self.final_epsilon, self.epsilon - self.epsilon_decay)
+
+
+    def train(self, env, n_episodes):
+
+        for episode in tqdm(range(n_episodes)):
+            obs = env.reset()
+            done = False
+            rounds = 0
+            # play one episode
+            while not done:
+                if rounds == 0:
+                    action = self.get_action(obs)
+                    next_obs, reward, terminated, truncated = env.step(action)
+                    next_action = self.get_action(next_obs)
+
+                    # update the agent
+                    self.update(obs, action, next_action, reward, terminated, next_obs)
+
+                    # update if the environment is done and the current obs
+                    done = terminated or truncated
+                    obs = next_obs
+
+                    action = next_action
+                    obs = next_obs
+
+                    rounds += 1
+
+                else:
+                    next_obs, reward, terminated, truncated = env.step(action)
+                    next_action = self.get_action(next_obs)
+
+                    # update the agent
+                    self.update(obs, action, next_action, reward, terminated, next_obs)
+
+                    # update if the environment is done and the current obs
+                    done = terminated or truncated
+                    obs = next_obs
+
+                    action = next_action
+                    obs = next_obs
+
+            self.decay_epsilon()

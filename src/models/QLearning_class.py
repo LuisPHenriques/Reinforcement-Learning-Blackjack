@@ -1,5 +1,7 @@
 import numpy as np
+
 from collections import defaultdict
+from tqdm import tqdm
 
 
 class BlackjackAgent:
@@ -52,3 +54,24 @@ class BlackjackAgent:
 
     def decay_epsilon(self):
         self.epsilon = max(self.final_epsilon, self.epsilon - self.epsilon_decay)
+
+
+    def train(self, env, n_episodes):
+
+        for episode in tqdm(range(n_episodes)):
+            obs = env.reset()
+            done = False
+
+            # play one episode
+            while not done:
+                action = self.get_action(obs)
+                next_obs, reward, terminated, truncated = env.step(action)
+
+                # update the agent
+                self.update(obs, action, reward, terminated, next_obs)
+
+                # update if the environment is done and the current obs
+                done = terminated or truncated
+                obs = next_obs
+
+            self.decay_epsilon()
