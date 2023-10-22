@@ -16,7 +16,7 @@ def monte_carlo_ES(environment, N_episodes = 100000, discount_factor = 1, first_
     environment:AI gym balckjack envorment object 
     N_episodes:number of episodes 
     discount_factor:discount factor
-    first_visit: select first-visit MC (Ture) and every-visit MC (False)
+    first_visit: select first-visit MC (True) and every-visit MC (False)
     epsilon: epsilon value 
     theta:stoping threshold
     """  
