@@ -72,7 +72,6 @@ class SarsaAgent:
 
                     # update if the environment is done and the current obs
                     done = terminated or truncated
-                    obs = next_obs
 
                     action = next_action
                     obs = next_obs
@@ -88,7 +87,6 @@ class SarsaAgent:
 
                     # update if the environment is done and the current obs
                     done = terminated or truncated
-                    obs = next_obs
 
                     action = next_action
                     obs = next_obs

@@ -4,7 +4,7 @@ from collections import defaultdict
 from tqdm import tqdm
 
 
-class BlackjackAgent:
+class QLearningAgent:
     def __init__(self, environment, learning_rate = 0.001, initial_epsilon = 0.1, epsilon_decay = 0.05, final_epsilon = 0.01, discount_factor = 0.95):
         """Initialize a Reinforcement Learning agent with an empty dictionary
         of state-action values (q_values), a learning rate and an epsilon.
