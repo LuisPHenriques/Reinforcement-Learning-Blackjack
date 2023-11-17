@@ -82,7 +82,6 @@ def game_result (environment,state,show=True):
 
 
 #This function calculates the average number of wins for a game of blackjack given a policy:
-
 def average_wins(environment, policy = None, episodes = 10):
     """
     This function calculates the average number of wins for a game of blackjack given a policy.
@@ -180,4 +179,48 @@ def random_action(action, epsilon = 0.1, n_actions = 2):
     else:
         action = np.random.randint(n_actions)  
         return action 
-    
+
+
+#Function for the custom reward 
+def reward_function(state, action, agent_type, player_sum):
+    """
+    Função de recompensa modificada para diferentes tipos de jogadores.
+
+    Args:
+    state: estado atual do jogo
+    action: ação tomada pelo jogador
+    agent_type: tipo do jogador (Conservador, Neutro, Agressivo)
+    player_sum: soma das cartas do jogador
+
+    Returns:
+    reward: recompensa modificada
+    """
+
+    if agent_type == "Conservador":
+        if player_sum < 12 and action == 0:  # Ação de Ficar
+            reward = 0.3  # Recompensa por ficar
+        elif action == 0:
+            reward = 0.1  # Recompensa por não pedir carta
+        else:
+            reward = -0.2  # Penalização por pedir carta
+
+    elif agent_type == "Neutro":
+        if player_sum <= 15 and action == 1:  # Ação de Pegar carta
+            reward = 0.3  # Recompensa por pedir carta
+        else:
+            reward = -0.1  # Penalização por ficar
+
+    elif agent_type == "Agressivo":
+        if player_sum > 15 and action == 1:  # Ação de Pegar carta
+            reward = 0.3  # Recompensa por pedir carta
+        elif player_sum > 21:
+            reward = -0.3  # Penalização por ultrapassar 21
+        elif action == 1:
+           reward = 0.1  # Recompensa por pedir carta
+        else:
+            reward = -0.1  # Penalização por ficar
+
+    else:
+        reward = 0.0
+
+    return reward
