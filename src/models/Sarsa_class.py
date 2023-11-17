@@ -41,8 +41,10 @@ class SarsaAgent:
 
     def update(self, obs: tuple[int, int, bool], action: int, next_action: int, reward: float, terminated: bool, next_obs: tuple[int, int, bool]):
         """Updates the Q-value of an action."""
+        future_q_value = (not terminated) * self.q_values[next_obs][next_action]
+
         temporal_difference = (
-            reward + self.discount_factor * self.q_values[next_obs][next_action] - self.q_values[obs][action]
+            reward + self.discount_factor * future_q_value - self.q_values[obs][action]
         )
 
         self.q_values[obs][action] = (
