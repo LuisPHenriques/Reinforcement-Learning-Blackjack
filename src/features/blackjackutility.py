@@ -124,6 +124,8 @@ def play_n_games(agent, environment, n_games):
     wins = 0
     draws = 0
     losses = 0
+    agent.epsilon = 0
+    
     for _ in range(n_games):
         state = environment.reset()
         done = False
