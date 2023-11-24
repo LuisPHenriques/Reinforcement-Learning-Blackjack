@@ -119,6 +119,26 @@ def average_wins(environment, policy = None, episodes = 10):
 
     return average_wins, std_win
 
+# define a function that plays n games and computes the percentage of wins, drwas and losses
+def play_n_games(agent, environment, n_games):
+    wins = 0
+    draws = 0
+    losses = 0
+    for _ in range(n_games):
+        state = environment.reset()
+        done = False
+        while not done:
+            action = agent.get_action(state)
+            state, reward, done, info = environment.step(action)
+        if reward == 1:
+            wins += 1
+        elif reward == 0:
+            draws += 1
+        else:
+            losses += 1
+    return wins / n_games, draws / n_games, losses / n_games
+
+
 def games_with_policy(environment, policy = None, episodes = 10):
     sum_ = 0
 

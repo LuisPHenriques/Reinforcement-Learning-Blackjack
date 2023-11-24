@@ -5,8 +5,11 @@ from tqdm import tqdm
 from src.features.blackjackutility import  create_epsilon_greedy_action_policy
 from IPython.display import clear_output
 
+from src.features.blackjackutility import reward_function
+
+
 class QLearningAgent:
-    def __init__(self, environment, learning_rate = 0.001, initial_epsilon = 0.1, epsilon_decay = 0.05, final_epsilon = 0.01, discount_factor = 0.95):
+    def __init__(self, environment, agent_type = None, learning_rate = 0.001, initial_epsilon = 0.1, epsilon_decay = 0.05, final_epsilon = 0.01, discount_factor = 0.95):
         """Initialize a Reinforcement Learning agent with an empty dictionary
         of state-action values (q_values), a learning rate and an epsilon.
 
@@ -21,6 +24,7 @@ class QLearningAgent:
         self.env = environment
         self.lr = learning_rate
         self.discount_factor = discount_factor
+        self.agent_type = agent_type
 
         self.epsilon = initial_epsilon
         self.epsilon_decay = epsilon_decay
@@ -68,6 +72,10 @@ class QLearningAgent:
             while not done:
                 action = self.get_action(obs)
                 next_obs, reward, terminated, truncated = env.step(action)
+                # check if the agent_type is None or not:
+                if self.agent_type is not None:        
+                    custom_reward = reward_function(obs, action, agent_type = self.agent_type, player_sum = obs[0])
+                    reward += custom_reward
 
                 # update the agent
                 self.update(obs, action, reward, terminated, next_obs)
