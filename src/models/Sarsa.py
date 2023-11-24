@@ -2,6 +2,8 @@ import numpy as np
 
 from collections import defaultdict
 from tqdm import tqdm
+from src.features.blackjackutility import  create_epsilon_greedy_action_policy
+from IPython.display import clear_output
 
 class SarsaAgent:
     def __init__(self, environment, learning_rate = 0.001, initial_epsilon = 0.1, epsilon_decay = 0.05, final_epsilon = 0.01, discount_factor = 0.95):
@@ -94,3 +96,47 @@ class SarsaAgent:
                     obs = next_obs
 
             self.decay_epsilon()
+
+def SARSA(env, episodes, epsilon, alpha, gamma):
+    """
+    SARSA Learning Method
+    
+    Args:
+        env: OpenAI gym environment.
+        episodes: Number of episodes to sample.
+        epsilon: Probability of selecting random action instead of the 'optimal' action
+        alpha: Learning Rate
+        gamma: Gamma discount factor
+        
+    
+    Returns:
+        A tuple (Q, policy).
+        Q is a dictionary mapping state -> action values.
+        policy is a function that takes an observation as an argument and returns
+        action probabilities. 
+    """
+    
+    # Initialise a dictionary that maps state -> action values
+    Q = defaultdict(lambda: np.zeros(env.action_space.n))
+    # The policy we're following
+    pol = create_epsilon_greedy_action_policy(env,Q,epsilon)
+    for i in range(1, episodes + 1):
+        # Print out which episode we're on
+        if i% 1000 == 0:
+            print("\rEpisode {}/{}.".format(i, episodes), end="")
+            clear_output(wait=True)
+        curr_state = env.reset()
+        probs = pol(curr_state)   #get epsilon greedy policy
+        curr_act = np.random.choice(np.arange(len(probs)), p=probs)
+        while True:
+            next_state,reward,done,_ = env.step(curr_act)
+            next_probs = create_epsilon_greedy_action_policy(env,Q,epsilon)(next_state)
+            next_act = np.random.choice(np.arange(len(next_probs)),p=next_probs)
+            td_target = reward + gamma * Q[next_state][curr_act]
+            td_error = td_target - Q[curr_state][curr_act]
+            Q[curr_state][curr_act] = Q[curr_state][curr_act] + alpha * td_error
+            if done:
+                break
+            curr_state = next_state
+            curr_act = next_act
+    return Q, pol

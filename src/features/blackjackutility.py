@@ -79,8 +79,6 @@ def game_result (environment,state,show=True):
         result=-1
     return result 
 
-
-
 #This function calculates the average number of wins for a game of blackjack given a policy:
 def average_wins(environment, policy = None, episodes = 10):
     """
@@ -120,7 +118,6 @@ def average_wins(environment, policy = None, episodes = 10):
     std_win = win_loss.std() / np.sqrt(episodes)
 
     return average_wins, std_win
-
 
 def games_with_policy(environment, policy = None, episodes = 10):
     sum_ = 0
@@ -163,7 +160,6 @@ def games_with_policy(environment, policy = None, episodes = 10):
         sum_ += reward
     print('Total reward: {}'.format(sum_))
 
-
 def random_action(action, epsilon = 0.1, n_actions = 2):
     ''' 
     This function takes the best estimated action, eplsilon, and action space 
@@ -179,7 +175,6 @@ def random_action(action, epsilon = 0.1, n_actions = 2):
     else:
         action = np.random.randint(n_actions)  
         return action 
-
 
 #Function for the custom reward 
 def reward_function(state, action, agent_type, player_sum):
@@ -224,3 +219,55 @@ def reward_function(state, action, agent_type, player_sum):
         reward = 0.0
 
     return reward
+
+def draw_till_17_pol(obs):
+    return [1,0] if obs[0]<17 else [0,1]
+
+def create_epsilon_greedy_action_policy(env,Q,epsilon):
+    """ Create epsilon greedy action policy
+    Args:
+        env: Environment
+        Q: Q table
+        epsilon: Probability of selecting random action instead of the 'optimal' action
+    
+    Returns:
+        Epsilon-greedy-action Policy function with Probabilities of each action for each state
+    """
+    def policy(obs):
+        P = np.ones(env.action_space.n, dtype=float) * epsilon / env.action_space.n  #initiate with same prob for all actions
+        best_action = np.argmax(Q[obs])  #get best action
+        P[best_action] += (1.0 - epsilon)
+        return P
+    return policy
+
+def create_random_policy(nA):
+    """
+    Creates a random policy function.
+    
+    Args:
+        nA: Number of actions in the environment.
+    
+    Returns:
+        A function that takes an observation state as input and returns a vector
+        of action probabilities
+    """
+    A = np.ones(nA, dtype=float) / nA
+    def policy_fn(obs):
+        return A
+    return policy_fn
+
+def create_greedy_action_policy(env,Q):
+    """ Create greedy action policy
+    Args:
+        env: Environment
+        Q: Q table
+    
+    Returns:
+        Greedy-action Policy function 
+    """
+    def policy(obs):
+        P = np.zeros_like(Q[obs], dtype=float)
+        best_action = np.argmax(Q[obs])  #get best action
+        P[best_action] = 1
+        return P
+    return policy

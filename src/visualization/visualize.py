@@ -1,15 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib
 import seaborn as sns
 
 from collections import defaultdict
 from matplotlib.patches import Patch
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.mplot3d import Axes3D
 
 
 # We will define some functions to help us train the algorithm and visualize the game results. 
 
 # This function is used to plot the value function:
-def plot_value_function(V):
+def plot_value_function_old(V):
     """
     plot the estimated value function for blackjack 
     Returns:  void plots value function 
@@ -215,3 +219,117 @@ def create_plots(value_grid, policy_grid, title: str):
     ]
     ax2.legend(handles=legend_elements, bbox_to_anchor=(1.3, 1))
     return fig
+
+
+def calc_payoffs(env,rounds,players,pol):
+    """
+    Calculate Payoffs.
+    
+    Args:
+        env: environment
+        rounds: Number of rounds a player would play
+        players: Number of players 
+        pol: Policy used
+        
+    Returns:
+        Average payoff
+    """
+    average_payouts = []
+    for player in range(players):
+        rd = 1
+        total_payout = 0 # to store total payout over 'num_rounds'
+
+        while rd <= rounds:
+            obs, _, _, _ = env.step(env.action_space.sample()) # Get initial observation
+            action = np.argmax(pol(obs))
+            obs, payout, is_done, _ = env.step(action)
+            if is_done:
+                total_payout += payout
+                env.reset()
+                rd += 1
+        average_payouts.append(total_payout / rounds) # Store the average payout
+
+    plt.plot(average_payouts)
+    plt.xlabel('Player')
+    plt.ylabel('Average payout after ' + str(rounds) + ' rounds')
+    plt.show()
+    average_total_payout = sum(average_payouts) / players
+    print("Average payout of a player after {} rounds is {}".format(rounds, average_total_payout))
+    return average_total_payout
+
+
+def plot_policy(policy):
+
+    """ This function visualizes a given policy for a blackjack game.
+    # The policy is represented as a mapping from states (player's hand, dealer's showing card, and whether there's a usable ace) to actions.
+    # The plot displays whether to hit or stick (0 or 1) across different game states.     """
+
+    # Helper function to determine the action for a given state.
+    # If the state is not explicitly in the policy dictionary, it defaults to 1 (hit).
+    def get_Z(player_hand, dealer_showing, usable_ace):
+        return policy.get((player_hand, dealer_showing, usable_ace), 1)
+
+    # Helper function to prepare the plot for a given ace condition (usable or not).
+    # It sets up the axes, labels, and color map for the plot.
+    def get_figure(usable_ace, ax):
+        x_range = np.arange(1, 11)  # Dealer showing card range
+        y_range = np.arange(11, 22)  # Player hand range
+        X, Y = np.meshgrid(x_range, y_range)  # Create a grid over the ranges
+        Z = np.array([[get_Z(player_hand, dealer_showing, usable_ace) for dealer_showing in x_range] for player_hand in range(21, 10, -1)])  # Determine actions for the grid
+        surf = ax.imshow(Z, cmap=plt.get_cmap('Accent', 2), vmin=0, vmax=1, extent=[0.5, 10.5, 10.5, 21.5])  # Plot the actions
+        plt.xticks(x_range, ('A', '2', '3', '4', '5', '6', '7', '8', '9', '10'))  # Set x-ticks to show card values
+        plt.yticks(y_range)  # Set y-ticks to show player's hand values
+        ax.set_xlabel('Dealer Showing')  # X-axis label
+        ax.set_ylabel('Player Hand')  # Y-axis label
+        ax.grid(color='black', linestyle='-', linewidth=1)  # Add a grid for clarity
+        # Setup the colorbar to show action labels
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.1)
+        cbar = plt.colorbar(surf, ticks=[0, 1], cax=cax)
+        cbar.ax.set_yticklabels(['0 (STICK)','1 (HIT)'])  # Set labels for actions
+        cbar.ax.invert_yaxis() 
+            
+    # Setup the figure and axes for the two ace conditions
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(121)
+    ax.set_title('Usable Ace', fontsize=16)  # Title for the usable ace plot
+    get_figure(True, ax)  # Plot for usable ace
+    ax = fig.add_subplot(122)
+    ax.set_title('No Usable Ace', fontsize=16)  # Title for the no usable ace plot
+    get_figure(False, ax)  # Plot for no usable ace
+    plt.show()
+
+def plot_value_function(V, title="Value Function"):
+    """ This function plots the value function of a policy in a 3D surface plot.
+    The value function maps each state to the expected return from that state under the policy.
+    The plot shows the values across different states, for both conditions of having a usable ace or not. """
+    min_x = min(k[0] for k in V.keys())  # Minimum player hand value
+    max_x = max(k[0] for k in V.keys())  # Maximum player hand value
+    min_y = min(k[1] for k in V.keys())  # Minimum dealer showing card value
+    max_y = max(k[1] for k in V.keys())  # Maximum dealer showing card value
+
+    x_range = np.arange(min_x, max_x + 1)  # Player hand range
+    y_range = np.arange(min_y, max_y + 1)  # Dealer showing card range
+    X, Y = np.meshgrid(x_range, y_range)  # Create a grid over the ranges
+
+    # Find the value function for all states with and without a usable ace
+    Z_noace = np.apply_along_axis(lambda _: V[(_[0], _[1], False)], 2, np.dstack([X, Y]))
+    Z_ace = np.apply_along_axis(lambda _: V[(_[0], _[1], True)], 2, np.dstack([X, Y]))
+
+    # Helper function to plot the surface for given data
+    def plot_surface(X, Y, Z, title):
+        fig = plt.figure(figsize=(16,8))
+        ax = fig.add_subplot(111, projection='3d')
+        surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
+                               cmap=matplotlib.cm.coolwarm, vmin=-1.0, vmax=1.0)
+        ax.set_xlabel('Player Sum')  # X-axis label
+        ax.set_ylabel('Dealer Showing')  # Y-axis label
+        ax.set_zlabel('Value')  # Z-axis (value) label
+        ax.set_title(title)  # Title for the plot
+        ax.view_init(ax.elev, -120)  # Set the view angle
+        fig.colorbar(surf)  # Add a colorbar to show the value scale
+        plt.show()
+
+    # Plot the value function for both ace conditions
+    plot_surface(X, Y, Z_noace, "{} (No Usable Ace)".format(title))  # Plot for no usable ace
+    plot_surface(X, Y, Z_ace, "{} (Usable Ace)".format(title))  # Plot for usable ace
