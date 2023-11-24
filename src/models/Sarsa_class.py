@@ -3,8 +3,10 @@ import numpy as np
 from collections import defaultdict
 from tqdm import tqdm
 
+from src.features.blackjackutility import reward_function
+
 class SarsaAgent:
-    def __init__(self, environment, learning_rate = 0.001, initial_epsilon = 0.1, epsilon_decay = 0.05, final_epsilon = 0.01, discount_factor = 0.95):
+    def __init__(self, environment, agent_type = None, learning_rate = 0.001, initial_epsilon = 0.1, epsilon_decay = 0.05, final_epsilon = 0.01, discount_factor = 0.95):
         """Initialize a Reinforcement Learning agent with an empty dictionary
         of state-action values (q_values), a learning rate and an epsilon.
 
@@ -19,6 +21,7 @@ class SarsaAgent:
         self.env = environment
         self.lr = learning_rate
         self.discount_factor = discount_factor
+        self.agent_type = agent_type
 
         self.epsilon = initial_epsilon
         self.epsilon_decay = epsilon_decay
@@ -69,6 +72,10 @@ class SarsaAgent:
                     next_obs, reward, terminated, truncated = env.step(action)
                     next_action = self.get_action(next_obs)
 
+                    if self.agent_type is not None:        
+                        custom_reward = reward_function(obs, action, agent_type = self.agent_type, player_sum = obs[0])
+                        reward += custom_reward
+
                     # update the agent
                     self.update(obs, action, next_action, reward, terminated, next_obs)
 
@@ -83,6 +90,10 @@ class SarsaAgent:
                 else:
                     next_obs, reward, terminated, truncated = env.step(action)
                     next_action = self.get_action(next_obs)
+
+                    if self.agent_type is not None:        
+                        custom_reward = reward_function(obs, action, agent_type = self.agent_type, player_sum = obs[0])
+                        reward += custom_reward
 
                     # update the agent
                     self.update(obs, action, next_action, reward, terminated, next_obs)
