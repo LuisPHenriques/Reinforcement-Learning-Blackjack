@@ -2,8 +2,9 @@ import numpy as np
 from collections import defaultdict
 from src.features.blackjackutility import random_action, create_epsilon_greedy_action_policy, create_greedy_action_policy
 from IPython.display import clear_output
+from copy import deepcopy
 
-def monte_carlo_ES(environment, N_episodes = 100000, discount_factor = 1, first_visit = True, epsilon = 0.1, theta = 0.0001):
+def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1, first_visit = True, epsilon = 0.1, theta = 0.0001):
     """
     plot the policy for blackjack 
     Returns:   
@@ -132,135 +133,58 @@ def monte_carlo_ES(environment, N_episodes = 100000, discount_factor = 1, first_
 
     return policy, V, Q, DELTA
 
-def monte_carlo(environment, N_episodes=100000, discount_factor=1, epsilon=0.1, theta=0.0001):
-    """
-    Simple Monte Carlo for Blackjack to estimate state values.
-    Returns:
-    V: a dictionary of estimated values for blackjack
-    DELTA: list of deltas for each episode
-    Args:
-    environment: AI gym blackjack environment object
-    N_episodes: number of episodes
-    discount_factor: discount factor
-    epsilon: epsilon value
-    theta: stopping threshold
-    """
-    # Dictionary of estimated values for blackjack, initialized to 0
-    V = defaultdict(float)
-    # Dictionary to track the number of visits to each state
-    N = defaultdict(int)
-    # Number of actions
-    number_actions = environment.action_space.n
-    # List of max difference between value functions per iteration
-    DELTA = []
+def monte_carlo_off_policy(environment, N_episodes=200000, discount_factor=1, epsilon=0.1, theta=0):
+    # Inicializa Q como um dicionário que retorna um dicionário padrão de zeros.
+    Q = defaultdict(lambda: np.zeros(environment.action_space.n))
+    C = defaultdict(float)  # Contador de frequência dos pares estado-ação
+    policy = {}  # A política que está sendo melhorada
+    number_actions = environment.action_space.n  # Número de ações possíveis
+    DELTA = []  # Para armazenar as diferenças máximas de Q a cada episódio
 
     for i in range(N_episodes):
-        # Max difference between value functions
-        delta = 0
-        # List that stores each state and reward for each episode
         episode = []
-
-        # Reset the environment for the next episode and find the first state
         state = environment.reset()
         done = False
-
         while not done:
-            # Select action using epsilon-greedy policy
-            if np.random.rand() < epsilon:
-                action = np.random.randint(number_actions)
-            else:
-                action = np.argmax([V[state, a] for a in range(number_actions)])
-
-            # Take action and observe next state and reward
+            # A política de comportamento pode ser diferente aqui, como uma política aleatória.
+            action = np.random.choice(number_actions, p=behavior_policy(state))
             next_state, reward, done, _ = environment.step(action)
-            
-            # Store the state and reward in the episode
-            episode.append((state, reward))
-            
-            # Update state for the next iteration
+            episode.append((state, action, reward))
             state = next_state
-        
-        # Calculate returns and update value function
-        G = 0
-        for state, reward in reversed(episode):
-            G = discount_factor * G + reward
-            N[state] += 1  # Track the number of visits to each state
-            V[state] += (G - V[state]) / N[state]  # Update using running average
-            delta = max(delta, abs(G - V[state]))
 
+        G = 0
+        W = 1
+        for t in reversed(range(len(episode))):
+            state, action, reward = episode[t]
+            G = discount_factor * G + reward
+            C[state, action] += W
+            Q[state][action] += (W / C[state, action]) * (G - Q[state][action])
+            
+            # Atualiza a política para a ação com o maior valor Q no estado.
+            policy[state] = np.argmax(Q[state])
+            
+            if action != policy[state]:
+                break  # Se a ação tomada não é a ótima, o episódio não contribui mais.
+            
+            W *= 1. / behavior_policy(state)[action]  # Atualiza o peso de amostragem.
+
+        # Se necessário, calcule a diferença máxima em Q para verificação de convergência.
+        # Este código assume que você deseja verificar a convergência.
+        delta = max(abs(Q[s][a] - old_Q) for s, a_values in Q.items() for a, old_Q in enumerate(a_values))
         DELTA.append(delta)
         if delta < theta:
             break
 
-    return V, DELTA
+    return policy, Q, DELTA
 
-def On_pol_mc_control_learn(env, episodes, discount_factor, epsilon):
-    """
-    Monte Carlo Control using Epsilon-Greedy policies.
-    Finds an optimal epsilon-greedy policy.
-    
-    Args:
-        env: Environment.
-        episodes: Number of episodes to sample.
-        discount_factor: Gamma discount factor.
-        epsilon: Chance the sample a random action. Float betwen 0 and 1.
-    
-    Returns:
-        A tuple (Q, policy).
-        Q is a dictionary mapping state to action values.
-        Policy is the trained policy that returns action probabilities
-    """
-    # Keeps track of sum and count of returns for each state
-    # An array could be used to save all returns but that's memory inefficient.
-    # defaultdict used so that the default value is stated if the observation(key) is not found
-    returns_sum = defaultdict(float)
-    returns_count = defaultdict(float)
-    
-    # The final action-value function.
-    # A nested dictionary that maps state -> (action -> action-value).
-    Q = defaultdict(lambda: np.zeros(env.action_space.n))
-    
-    # The policy we're following
-    pol = create_epsilon_greedy_action_policy(env,Q,epsilon)
-    
-    for i in range(1, episodes + 1):
-        # Print out which episode we're on
-        if i% 1000 == 0:
-            print("\rEpisode {}/{}.".format(i, episodes), end="")
-            clear_output(wait=True)
+def behavior_policy(state):
+    # Retorna a distribuição de probabilidade de ações para a política de comportamento.
+    # Isso é apenas um exemplo e deve ser substituído pela sua política de comportamento real.
+    return np.array([0.5, 0.5])  # Por exemplo, uma política aleatória em um espaço de ação com 2 ações.
 
-        # Generate an episode.
-        # An episode is an array of (state, action, reward) tuples
-        episode = []
-        state = env.reset()
-        for t in range(100):
-            probs = pol(state)
-            action = np.random.choice(np.arange(len(probs)), p=probs)
-            next_state, reward, done, _ = env.step(action)
-            episode.append((state, action, reward))
-            if done:
-                break
-            state = next_state
+# Suponha que `environment` seja um objeto de ambiente do Gym que você tenha definido em outro lugar.
+# policy, Q, DELTA = monte_carlo_off_policy(environment)
 
-        # Find all (state, action) pairs we've visited in this episode
-        # We convert each state to a tuple so that we can use it as a dict key
-        sa_in_episode = set([(tuple(x[0]), x[1]) for x in episode])
-        for state, action in sa_in_episode:
-            sa_pair = (state, action)
-            #First Visit MC:
-            # Find the first occurance of the (state, action) pair in the episode
-            first_occurence_idx = next(i for i,x in enumerate(episode)
-                                       if x[0] == state and x[1] == action)
-            # Sum up all rewards since the first occurance
-            G = sum([x[2]*(discount_factor**i) for i,x in enumerate(episode[first_occurence_idx:])])
-            # Calculate average return for this state over all sampled episodes
-            returns_sum[sa_pair] += G
-            returns_count[sa_pair] += 1.0
-            Q[state][action] = returns_sum[sa_pair] / returns_count[sa_pair]
-    
-    return Q, pol
-
-def Off_pol_mc_control_learn(env, num_episodes, policy, discount_factor):
     """
     Monte Carlo Control Off-Policy Control using Weighted Importance Sampling.
     Finds an optimal greedy policy.
