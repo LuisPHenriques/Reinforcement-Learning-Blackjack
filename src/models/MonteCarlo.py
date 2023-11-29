@@ -1,10 +1,10 @@
 import numpy as np
 from collections import defaultdict
-from src.features.blackjackutility import random_action, create_epsilon_greedy_action_policy, create_greedy_action_policy
+from src.features.blackjackutility import random_action, create_greedy_action_policy
 from IPython.display import clear_output
-from copy import deepcopy
+from src.features.blackjackutility import reward_function
 
-def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1, first_visit = True, epsilon = 0.1, theta = 0.0001):
+def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1, first_visit = True, epsilon = 0.1, theta = 0.0001, agent_type=None):
     """
     plot the policy for blackjack 
     Returns:   
@@ -57,6 +57,10 @@ def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1,
 
                 #take action and find next state, reward and check if the episode is  done (True)
                 (state, reward, done, prob) = environment.step(action)
+
+                if agent_type is not None:        
+                    custom_reward = reward_function(state, action, agent_type=agent_type, player_sum=state[0])
+                    reward += custom_reward
 
                 #check if a policy for the state exists  
                 if isinstance(policy[state],np.int64):
@@ -133,22 +137,28 @@ def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1,
 
     return policy, V, Q, DELTA
 
-def monte_carlo_off_policy(environment, N_episodes=200000, discount_factor=1, epsilon=0.1, theta=0):
-    # Inicializa Q como um dicionário que retorna um dicionário padrão de zeros.
+def monte_carlo_off_policy(environment, N_episodes=200000, discount_factor=1, epsilon=0.1, theta=0, agent_type=None):
+    # Initializes Q as a dictionary that returns a default dictionary of zeros.
     Q = defaultdict(lambda: np.zeros(environment.action_space.n))
-    C = defaultdict(float)  # Contador de frequência dos pares estado-ação
-    policy = {}  # A política que está sendo melhorada
-    number_actions = environment.action_space.n  # Número de ações possíveis
-    DELTA = []  # Para armazenar as diferenças máximas de Q a cada episódio
+    C = defaultdict(float)  # State-action pair frequency counter
+    policy = {}  # The policy that is being improved
+    number_actions = environment.action_space.n  # Number of possible actions
+    DELTA = [] # To store the maximum Q differences for each episode
 
     for i in range(N_episodes):
         episode = []
         state = environment.reset()
         done = False
         while not done:
-            # A política de comportamento pode ser diferente aqui, como uma política aleatória.
+            # The behavior policy can be different here, like a random policy.
             action = np.random.choice(number_actions, p=behavior_policy(state))
             next_state, reward, done, _ = environment.step(action)
+
+            # Add the personalized reward to the environment reward
+            if agent_type is not None:        
+                custom_reward = reward_function(state, action, agent_type=agent_type, player_sum=state[0])
+                reward += custom_reward
+
             episode.append((state, action, reward))
             state = next_state
 
@@ -156,20 +166,21 @@ def monte_carlo_off_policy(environment, N_episodes=200000, discount_factor=1, ep
         W = 1
         for t in reversed(range(len(episode))):
             state, action, reward = episode[t]
+
             G = discount_factor * G + reward
             C[state, action] += W
             Q[state][action] += (W / C[state, action]) * (G - Q[state][action])
             
-            # Atualiza a política para a ação com o maior valor Q no estado.
+           # Updates the policy for the action with the highest Q-value in the state.
             policy[state] = np.argmax(Q[state])
             
             if action != policy[state]:
-                break  # Se a ação tomada não é a ótima, o episódio não contribui mais.
+                break  # If the action taken is not optimal, the episode no longer contributes.
             
             W *= 1. / behavior_policy(state)[action]  # Atualiza o peso de amostragem.
 
-        # Se necessário, calcule a diferença máxima em Q para verificação de convergência.
-        # Este código assume que você deseja verificar a convergência.
+        # If necessary, calculate the maximum difference in Q to check for convergence.
+        # This code assumes that you want to check convergence.
         delta = max(abs(Q[s][a] - old_Q) for s, a_values in Q.items() for a, old_Q in enumerate(a_values))
         DELTA.append(delta)
         if delta < theta:

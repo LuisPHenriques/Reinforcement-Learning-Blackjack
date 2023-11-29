@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def get_total(Input):
     """
@@ -79,45 +80,67 @@ def game_result (environment,state,show=True):
         result=-1
     return result 
 
-#This function calculates the average number of wins for a game of blackjack given a policy:
-def average_wins(environment, policy = None, episodes = 10):
+#This function calculates the average number of wins, losses and draws for a game of blackjack given a policy:
+def average_results_with_plot(environment, policy=None, episodes=10, plot = False):
     """
-    This function calculates the average number of wins for a game of blackjack given a policy.
-    If no policy is provided a random policy is selected.
-    Returns: average_wins: the average number of wins 
-    std_wins: the average number of wins 
+    This function calculates and plots the evolution of the average win, loss and draw rates 
+    for a blackjack game given a policy over several episodes.
+    If no policy is provided, a random policy is selected.
+    
     Args:
-    environment:AI gym balckjack envorment object 
-    policy:policy for blackjack if none a random  action will be selected 
-    episodes: number of episodes 
+    - environment: gym AI blackjack environment object.
+    - policy: Policy for blackjack; if none, a random action is selected.
+    - episodes: Number of episodes to be simulated.
+
+    Returns: 
+    - average_wins: The average number of wins in the last episode.
+    - average_losses: The average number of losses in the last episode.
+    - average_draws: The average number of draws in the last episode.
     """
 
-    win_loss = np.zeros(episodes)
+    # Initialize win, loss and draw counters
+    wins, losses, draws = 0, 0, 0
 
-    for episode in range(episodes):
+    # Lists to store the average rates after each episode
+    win_rate, loss_rate, draw_rate = [], [], []
+
+    for episode in range(1, episodes + 1):
+        # Initializes the episode's state and completion flag
         state = environment.reset()
         done = False
 
         while not done:
-            if policy and isinstance(policy[state],np.int64):
-                 
-                action = policy[state]
-                
-            else:
-                action = environment.action_space.sample()
-
+            # Choose an action based on the provided policy or randomly
+            action = policy[state] if policy and isinstance(policy[state], np.int64) else environment.action_space.sample()
             state, reward, done, info = environment.step(action)
-        result = game_result(environment, state, show = False)
+
+        # Update counters based on the episode result
         if reward == 1:
-            win_loss[episode] = 1
-        else:
-            win_loss[episode] = 0  
+            wins += 1
+        elif reward == -1:
+            losses += 1
+        else: # reward == 0, which represents a draw
+            draws += 1
 
-        
-    average_wins = win_loss.mean()
-    std_win = win_loss.std() / np.sqrt(episodes)
+        # Calculates the averages after each episode
+        win_rate.append(wins / episode)
+        loss_rate.append(losses / episode)
+        draw_rate.append(draws / episode)
 
-    return average_wins, std_win
+    if(plot == "True"):
+
+        # Plotting the results
+        plt.plot(win_rate, label='Average Wins')
+        plt.plot(loss_rate, label='Average Losses')
+        plt.plot(draw_rate, label='Average Draws')
+        plt.xlabel('Episodes')
+        plt.ylabel('Average Rate')
+        plt.title('Average Win, Loss, and Draw Rates over Episodes')
+        plt.legend()
+        plt.show()
+
+    # Returns the final averages
+    return win_rate[-1], loss_rate[-1], draw_rate[-1]
 
 # define a function that plays n games and computes the percentage of wins, drwas and losses
 def play_n_games(agent, environment, n_games):

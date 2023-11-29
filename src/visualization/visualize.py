@@ -175,6 +175,27 @@ def create_grids(agent, usable_ace=False):
     )
     return value_grid, policy_grid
 
+def create_grids_monte_carlo(policy, V, usable_ace=False):
+    player_count, dealer_count = np.meshgrid(
+        np.arange(12, 22),  # players count
+        np.arange(1, 11),   # dealers face-up card
+    )
+
+    # create the value grid for plotting
+    value = np.apply_along_axis(
+        lambda obs: V.get((obs[0], obs[1], usable_ace), 0),  # default to 0 if state not in V
+        axis=2,
+        arr=np.dstack([player_count, dealer_count]),
+    )
+    value_grid = player_count, dealer_count, value
+
+    # create the policy grid for plotting
+    policy_grid = np.apply_along_axis(
+        lambda obs: policy.get((obs[0], obs[1], usable_ace), 0),  # default to 0 if state not in policy
+        axis=2,
+        arr=np.dstack([player_count, dealer_count]),
+    )
+    return value_grid, policy_grid
 
 def create_plots(value_grid, policy_grid, title: str):
     """Creates a plot using a value and policy grid."""
@@ -185,7 +206,7 @@ def create_plots(value_grid, policy_grid, title: str):
 
     # plot the state values
     ax1 = fig.add_subplot(1, 2, 1, projection="3d")
-    ax1.plot_surface(
+    surf = ax1.plot_surface(
         player_count,
         dealer_count,
         value,
@@ -196,17 +217,20 @@ def create_plots(value_grid, policy_grid, title: str):
     )
     plt.xticks(range(12, 22), range(12, 22))
     plt.yticks(range(1, 11), ["A"] + list(range(2, 11)))
-    ax1.set_title(f"State values: {title}")
+    ax1.set_title("State values")
     ax1.set_xlabel("Player sum")
     ax1.set_ylabel("Dealer showing")
     ax1.zaxis.set_rotate_label(False)
     ax1.set_zlabel("Value", fontsize=14, rotation=90)
     ax1.view_init(20, 220)
 
+    # Adiciona a barra de cores
+    fig.colorbar(surf, ax=ax1, shrink=0.5, aspect=5)
+
     # plot the policy
     fig.add_subplot(1, 2, 2)
     ax2 = sns.heatmap(policy_grid, linewidth=0, annot=True, cmap="Accent_r", cbar=False)
-    ax2.set_title(f"Policy: {title}")
+    ax2.set_title(f"Policy")
     ax2.set_xlabel("Player sum")
     ax2.set_ylabel("Dealer showing")
     ax2.set_xticklabels(range(12, 22))
