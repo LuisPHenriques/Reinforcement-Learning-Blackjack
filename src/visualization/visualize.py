@@ -142,7 +142,6 @@ def training_results(agent, env, rolling_length = 500):
     plt.tight_layout()
     plt.show()
 
-
 def create_grids(agent, usable_ace=False):
     """Create value and policy grid given an agent."""
     # convert our state-action values to state values

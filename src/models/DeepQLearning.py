@@ -127,7 +127,7 @@ def optimize_model(policy_network, target_network, memory, optimizer, device, ga
     optimizer.step()
 
 
-def train(env, policy_network, target_network, memory, optimizer, device, num_episodes = 1000, TAU = 0.01):
+def train_deepqlearning(env, policy_network, target_network, memory, optimizer, device, num_episodes = 1000, TAU = 0.01):
 
     for i_episode in range(num_episodes):
         # Initialize the environment and get it's state

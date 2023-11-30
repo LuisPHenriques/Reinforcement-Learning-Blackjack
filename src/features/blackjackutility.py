@@ -161,7 +161,7 @@ def play_n_games(agent, environment, n_games):
             draws += 1
         else:
             losses += 1
-    return wins / n_games, draws / n_games, losses / n_games
+    return wins / n_games, losses / n_games, draws / n_games
 
 
 def games_with_policy(environment, policy = None, episodes = 10):
