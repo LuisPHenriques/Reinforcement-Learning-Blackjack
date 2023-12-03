@@ -152,7 +152,8 @@ def monte_carlo_off_policy(environment, N_episodes=200000, discount_factor=1, ep
         while not done:
             # The behavior policy can be different here, like a random policy.
             action = np.random.choice(number_actions, p=behavior_policy(state))
-            next_state, reward, done, _ = environment.step(action)
+            #next_state, reward, done, _ = environment.step(action)
+            next_state, reward, done, info, extra = environment.step(action)
 
             # Add the personalized reward to the environment reward
             if agent_type is not None:        
