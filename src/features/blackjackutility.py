@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def get_total(Input):
     """
@@ -81,7 +82,7 @@ def game_result (environment,state,show=True):
     return result 
 
 #This function calculates the average number of wins, losses and draws for a game of blackjack given a policy:
-def average_results_with_plot(environment, policy=None, episodes=10, plot = False):
+def average_results_with_plot(environment, policy=None, episodes=10, window = 50000, plot = False, title="Monte Carlo On-Policy Control"):
     """
     This function calculates and plots the evolution of the average win, loss and draw rates 
     for a blackjack game given a policy over several episodes.
@@ -99,9 +100,8 @@ def average_results_with_plot(environment, policy=None, episodes=10, plot = Fals
     """
 
     # Initialize win, loss and draw counters
-    wins, losses, draws = 0, 0, 0
+    wins, losses, draws = [], [], []
 
-    # Lists to store the average rates after each episode
     win_rate, loss_rate, draw_rate = [], [], []
 
     for episode in range(1, episodes + 1):
@@ -116,31 +116,51 @@ def average_results_with_plot(environment, policy=None, episodes=10, plot = Fals
 
         # Update counters based on the episode result
         if reward == 1:
-            wins += 1
+            wins.append(1)
+            losses.append(0)
+            draws.append(0)
+
         elif reward == -1:
-            losses += 1
-        else: # reward == 0, which represents a draw
-            draws += 1
+            wins.append(0)
+            losses.append(1)
+            draws.append(0)
+        else:
+            wins.append(0)
+            losses.append(0)
+            draws.append(1)
 
         # Calculates the averages after each episode
-        win_rate.append(wins / episode)
-        loss_rate.append(losses / episode)
-        draw_rate.append(draws / episode)
+        win_rate.append(sum(wins) / episode)
+        loss_rate.append(sum(losses) / episode)
+        draw_rate.append(sum(draws) / episode)
 
     if plot:
 
-        # Plotting the results
-        plt.plot(win_rate, label='Average Wins')
-        plt.plot(loss_rate, label='Average Losses')
-        plt.plot(draw_rate, label='Average Draws')
-        plt.xlabel('Episodes')
-        plt.ylabel('Average Rate')
-        plt.title('Average Win, Loss, and Draw Rates over Episodes')
+        # Calculate the moving average
+        wins_moving_average = pd.Series(wins).rolling(window).mean()
+        losses_moving_average = pd.Series(losses).rolling(window).mean()
+        draws_moving_average = pd.Series(draws).rolling(window).mean()
+
+        # Create a new figure
+        plt.figure(figsize=(10, 5))
+
+        # Plot the moving average over the number of episodes
+        plt.plot(wins_moving_average, label="Wins")
+        plt.plot(losses_moving_average, label="Losses")
+        plt.plot(draws_moving_average, label="Draws")
+
+        # Add title and labels to the plot
+        plt.title(title)
+        plt.xlabel("Number of Episodes")
+        plt.ylabel("Moving Average")
         plt.legend()
+
+        # Display the plot
         plt.show()
 
     # Returns the final averages
     return win_rate[-1], loss_rate[-1], draw_rate[-1]
+
 
 # define a function that plays n games and computes the percentage of wins, drwas and losses
 def play_n_games(agent, environment, n_games):
