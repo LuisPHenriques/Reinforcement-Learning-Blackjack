@@ -3,6 +3,8 @@ from collections import defaultdict
 from src.features.blackjackutility import random_action, create_greedy_action_policy
 from IPython.display import clear_output
 from src.features.blackjackutility import reward_function
+from tqdm import tqdm
+
 
 def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1, first_visit = True, epsilon = 0.1, theta = 0.0001, agent_type=None):
     """
@@ -35,7 +37,7 @@ def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1,
     #list of max difference between  value functions per  iteration 
     DELTA = []
 
-    for i in range(N_episodes):
+    for i in tqdm(range(N_episodes)):
         #max difference between  value functions
         delta = 0
         #list that stores each state and reward for each episode     

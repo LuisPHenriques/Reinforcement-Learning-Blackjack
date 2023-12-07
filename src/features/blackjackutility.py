@@ -127,7 +127,7 @@ def average_results_with_plot(environment, policy=None, episodes=10, plot = Fals
         loss_rate.append(losses / episode)
         draw_rate.append(draws / episode)
 
-    if(plot == "True"):
+    if plot:
 
         # Plotting the results
         plt.plot(win_rate, label='Average Wins')
