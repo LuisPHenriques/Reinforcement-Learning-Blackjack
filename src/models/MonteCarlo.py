@@ -3,6 +3,8 @@ from collections import defaultdict
 from src.features.blackjackutility import random_action, create_greedy_action_policy
 from IPython.display import clear_output
 from src.features.blackjackutility import reward_function
+from tqdm import tqdm
+
 
 def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1, first_visit = True, epsilon = 0.1, theta = 0.0001, agent_type=None):
     """
@@ -35,7 +37,10 @@ def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1,
     #list of max difference between  value functions per  iteration 
     DELTA = []
 
-    for i in range(N_episodes):
+    # Initialize win, loss and draw counters
+    wins, losses, draws = [], [], []
+
+    for i in tqdm(range(N_episodes)):
         #max difference between  value functions
         delta = 0
         #list that stores each state and reward for each episode     
@@ -60,7 +65,7 @@ def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1,
 
                 if agent_type is not None:        
                     custom_reward = reward_function(state, action, agent_type=agent_type, player_sum=state[0])
-                    reward += custom_reward
+                    custom_reward += reward
 
                 #check if a policy for the state exists  
                 if isinstance(policy[state],np.int64):
@@ -71,7 +76,7 @@ def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1,
                      #if no policy for the state exists  select a random  action  
                     action = np.random.randint(number_actions)
                 #add state reward and action to list 
-                episode.append({'state':state, 'reward':reward, 'action':action})
+                episode.append({'state':state, 'reward': custom_reward if agent_type is not None else reward, 'action':action})
                 #add  states action this is for fist visit only 
                 state_action.append((state,action))
          #reverse list as the return is calculated from the last state
@@ -79,6 +84,21 @@ def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1,
         #append the state-action pairs to a list 
         state_action.reverse()
 
+
+        # Update counters based on the episode result
+        if reward == 1:
+            wins.append(1)
+            losses.append(0)
+            draws.append(0)
+
+        elif reward == -1:
+            wins.append(0)
+            losses.append(1)
+            draws.append(0)
+        else:
+            wins.append(0)
+            losses.append(0)
+            draws.append(1)
 
         #determine the return
         G = 0
@@ -135,7 +155,8 @@ def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1,
         if delta < theta:
             break
 
-    return policy, V, Q, DELTA
+    return policy, V, Q, DELTA, wins, losses, draws
+
 
 def monte_carlo_off_policy(environment, N_episodes=200000, discount_factor=1, epsilon=0.1, theta=0, agent_type=None):
     # Initializes Q as a dictionary that returns a default dictionary of zeros.
