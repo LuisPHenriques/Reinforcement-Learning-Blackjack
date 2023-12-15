@@ -82,7 +82,7 @@ def game_result (environment,state,show=True):
     return result 
 
 #This function calculates the average number of wins, losses and draws for a game of blackjack given a policy:
-def average_results_with_plot(environment, policy=None, episodes=10, window = 50000, plot = False, title="Monte Carlo On-Policy Control"):
+def average_results_with_plot(environment, policy=None, episodes=10):
     """
     This function calculates and plots the evolution of the average win, loss and draw rates 
     for a blackjack game given a policy over several episodes.
@@ -100,7 +100,7 @@ def average_results_with_plot(environment, policy=None, episodes=10, window = 50
     """
 
     # Initialize win, loss and draw counters
-    wins, losses, draws = [], [], []
+    wins, losses, draws = 0, 0, 0
 
     win_rate, loss_rate, draw_rate = [], [], []
 
@@ -116,47 +116,16 @@ def average_results_with_plot(environment, policy=None, episodes=10, window = 50
 
         # Update counters based on the episode result
         if reward == 1:
-            wins.append(1)
-            losses.append(0)
-            draws.append(0)
-
+            wins += 1
         elif reward == -1:
-            wins.append(0)
-            losses.append(1)
-            draws.append(0)
+            losses += 1
         else:
-            wins.append(0)
-            losses.append(0)
-            draws.append(1)
+            draws += 1
 
         # Calculates the averages after each episode
-        win_rate.append(sum(wins) / episode)
-        loss_rate.append(sum(losses) / episode)
-        draw_rate.append(sum(draws) / episode)
-
-    if plot:
-
-        # Calculate the moving average
-        wins_moving_average = pd.Series(wins).rolling(window).mean()
-        losses_moving_average = pd.Series(losses).rolling(window).mean()
-        draws_moving_average = pd.Series(draws).rolling(window).mean()
-
-        # Create a new figure
-        plt.figure(figsize=(10, 5))
-
-        # Plot the moving average over the number of episodes
-        plt.plot(wins_moving_average, label="Wins")
-        plt.plot(losses_moving_average, label="Losses")
-        plt.plot(draws_moving_average, label="Draws")
-
-        # Add title and labels to the plot
-        plt.title(title)
-        plt.xlabel("Number of Episodes")
-        plt.ylabel("Moving Average")
-        plt.legend()
-
-        # Display the plot
-        plt.show()
+        win_rate.append(wins / episode)
+        loss_rate.append(losses / episode)
+        draw_rate.append(draws / episode)
 
     # Returns the final averages
     return win_rate[-1], loss_rate[-1], draw_rate[-1]

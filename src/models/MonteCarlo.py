@@ -37,9 +37,6 @@ def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1,
     #list of max difference between  value functions per  iteration 
     DELTA = []
 
-    # Initialize win, loss and draw counters
-    wins, losses, draws = [], [], []
-
     for i in tqdm(range(N_episodes)):
         #max difference between  value functions
         delta = 0
@@ -83,22 +80,6 @@ def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1,
         episode.reverse()
         #append the state-action pairs to a list 
         state_action.reverse()
-
-
-        # Update counters based on the episode result
-        if reward == 1:
-            wins.append(1)
-            losses.append(0)
-            draws.append(0)
-
-        elif reward == -1:
-            wins.append(0)
-            losses.append(1)
-            draws.append(0)
-        else:
-            wins.append(0)
-            losses.append(0)
-            draws.append(1)
 
         #determine the return
         G = 0
@@ -155,7 +136,7 @@ def monte_carlo_on_policy(environment, N_episodes = 100000, discount_factor = 1,
         if delta < theta:
             break
 
-    return policy, V, Q, DELTA, wins, losses, draws
+    return policy, V, Q, DELTA
 
 
 def monte_carlo_off_policy(environment, N_episodes=200000, discount_factor=1, epsilon=0.1, theta=0, agent_type=None):
@@ -166,7 +147,7 @@ def monte_carlo_off_policy(environment, N_episodes=200000, discount_factor=1, ep
     number_actions = environment.action_space.n  # Number of possible actions
     DELTA = [] # To store the maximum Q differences for each episode
 
-    for i in range(N_episodes):
+    for i in tqdm(range(N_episodes)):
         episode = []
         state = environment.reset()
         done = False
